@@ -1,1 +1,1 @@
-# gui-thing
+# dialog
