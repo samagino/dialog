@@ -26,5 +26,5 @@ stack install
 to install it
 
 you're also gonna need `sdl2`, `sdl2-ttf`, and `sdl2-gfx`. so also install
-those by whatever means you prefer to on your computer and operating system and
-all that jazz.
+those by whatever means you prefer to according to your computer and operating
+system and all that jazz.
