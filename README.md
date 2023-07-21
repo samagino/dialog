@@ -17,13 +17,19 @@ to build it and then you can run
 stack exec prompt <command> <prompt>
 ```
 
-to test it and
+to test it from that same project directory and
 
 ```
 stack install
 ```
 
-to install it
+to install it so you can run
+
+```
+prompt <command> <prompt>
+```
+
+from whichever directory your heart desires
 
 you're also gonna need `sdl2`, `sdl2-ttf`, and `sdl2-gfx`. so also install
 those by whatever means you prefer according to your computer and operating
