@@ -34,3 +34,13 @@ from whichever directory your heart desires
 you're also gonna need `sdl2`, `sdl2-ttf`, and `sdl2-gfx`. so also install
 those by whatever means you prefer according to your computer and operating
 system and all that jazz.
+ 
+## font
+
+a path to a font is hardcoded in `src/Lib.hs` so you will prolly have
+to change this path to point to a font that is on your system to get
+things to work. the relevant line of code looks like:
+
+```
+font <- F.load "/usr/share/fonts/TTF/Crimson-Roman.ttf" 42
+```
