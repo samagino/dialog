@@ -1,7 +1,7 @@
 module Waves (sinwave 
              ,coswave
-             ,elipse
-             ,boxish) where
+             ,ellipsewave
+             ,rectwave) where
 
 import SDL.Vect (V2, V2(..))
 
@@ -23,22 +23,22 @@ sinwave = wave sin
 coswave :: (Integral a, Integral b, Integral c) => a -> a -> b -> c
 coswave = wave cos
 
-elipse :: (Integral a, Integral b)
+ellipsewave :: (Integral a, Integral b)
        => (V2 a) -- width/height to stay within
        -> a      -- length of cycle (larger for slower movement)
        -> b      -- current position in cycle
-       -> (V2 a) -- current position in elipse
-elipse box cyclelength i =
+       -> (V2 a) -- current position in ellipse
+ellipsewave box cyclelength i =
   let w = (\(V2 x _) -> coswave x cyclelength i) box
       h = (\(V2 _ y) -> sinwave y cyclelength i) box
    in (V2 w h)
 
-boxish :: (Integral a, Integral b)
+rectwave :: (Integral a, Integral b)
        => (V2 a) -- width/height to stay within
        -> a      -- length of cycle (larger for slower movement)
        -> b      -- current position in cycle
        -> (V2 a) -- current position in box type thing
-boxish box cyclelength i =
+rectwave box cyclelength i =
   let ctrapwave = wave (sin . (* pi) . (/ 2) . cos)
       strapwave = wave (sin . (* pi) . (/ 2) . sin)
       w = (\(V2 x _) -> ctrapwave x cyclelength i) box

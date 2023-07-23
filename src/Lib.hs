@@ -11,7 +11,7 @@ import SDL.Font      qualified as F
 import SDL.Primitive qualified as P
 
 import Selection (Selection, Selection(..), toggle)
-import Waves (sinwave, coswave, elipse, boxish)
+import Waves (sinwave, coswave, ellipsewave, rectwave)
 
 width, height :: CInt
 (width, height) = (640, 400)
@@ -50,7 +50,7 @@ renderPrompt renderer font prompt i =
      dims  <- mapM surfaceDimensions surfs
 
      let bounds = map (\d -> (V2 (width - 9) (height `div` 3)) - d) dims
-         points = map (\(b, j) -> (V2 0 (height `div` 6)) + (elipse b 500 (i + 250 + (j * 6)))) 
+         points = map (\(b, j) -> (V2 0 (height `div` 6)) + (ellipsewave b 500 (i + 250 + (j * 6)))) 
                       (zip bounds [0..])
          boxes = map (\(p, d) -> (Rectangle (P p) d))
                      (zip points dims)
@@ -58,7 +58,7 @@ renderPrompt renderer font prompt i =
      textures <- mapM (createTextureFromSurface renderer) surfs
 
      mapM_ (\(t,b) -> copy renderer t Nothing (Just b)) (zip textures boxes)
-     -- box demarcating elipse boundaries
+     -- box demarcating ellipse boundaries
      P.rectangle renderer (V2 0 (height `div` 6))
                           (V2 (width - 9) ((height `div` 6) + (height `div` 3))) 
                           (V4 0 0 255 255)
@@ -128,10 +128,10 @@ renderSelection renderer sel yDim nDim i =
        Y -> let circleBounds = yDim + V2 (margin * 2) (margin * 2)
                 pos = V2 (width   `div` 4) 
                          ((height `div` 4) * 3)
-                posInBox1 = boxish circleBounds 100 i
-                posInBox2 = boxish circleBounds 100 (i + 5)
-                posInBox3 = boxish circleBounds 100 (i + 50)
-                posInBox4 = boxish circleBounds 100 (i + 55)
+                posInBox1 = rectwave circleBounds 100 i
+                posInBox2 = rectwave circleBounds 100 (i + 5)
+                posInBox3 = rectwave circleBounds 100 (i + 50)
+                posInBox4 = rectwave circleBounds 100 (i + 55)
             in do P.fillCircle renderer (pos + posInBox1 - (V2 margin margin)) 3 (V4 0 0 255 255)
                   P.fillCircle renderer (pos + posInBox2 - (V2 margin margin)) 3 (V4 0 0 255 255)
                   P.fillCircle renderer (pos + posInBox3 - (V2 margin margin)) 3 (V4 0 255 127 255)
@@ -139,10 +139,10 @@ renderSelection renderer sel yDim nDim i =
        N -> let circleBounds = nDim + V2 (margin * 2) (margin * 2)
                 pos = V2 ((width  `div` 4) * 3)
                          ((height `div` 4) * 3)
-                posInBox1 = boxish circleBounds 100 i
-                posInBox2 = boxish circleBounds 100 (i + 5)
-                posInBox3 = boxish circleBounds 100 (i + 50)
-                posInBox4 = boxish circleBounds 100 (i + 55)
+                posInBox1 = rectwave circleBounds 100 i
+                posInBox2 = rectwave circleBounds 100 (i + 5)
+                posInBox3 = rectwave circleBounds 100 (i + 50)
+                posInBox4 = rectwave circleBounds 100 (i + 55)
             in do P.fillCircle renderer (pos + posInBox1 - (V2 margin margin)) 3 (V4 0 0 255 255)
                   P.fillCircle renderer (pos + posInBox2 - (V2 margin margin)) 3 (V4 0 0 255 255)
                   P.fillCircle renderer (pos + posInBox3 - (V2 margin margin)) 3 (V4 255 0 127 255)

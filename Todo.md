@@ -3,7 +3,6 @@
 ## refractor code
 
 + move more stuff into files besides `src/Lib.hs`
-+ rename `elipse` and `boxish` to `ellipsewave` and `rectwave` or something
 
 ## handle state better
 
