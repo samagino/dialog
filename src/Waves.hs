@@ -1,47 +1,50 @@
-module Waves (sinwave 
-             ,coswave
-             ,ellipsewave
-             ,rectwave) where
+module Waves (sinwaveI 
+             ,coswaveI
+             ,ellipsewaveV2
+             ,rectwaveV2) where
 
 import SDL.Vect (V2, V2(..))
 
-wave :: (Floating a, RealFrac a, Integral b, Integral c, Integral d)
-     => (a -> a) -- a trig function (or any function that will map Z to [-1,1])
-     -> b        -- desired bandwidth to expand into
-     -> b        -- desired length of cycle fed into trig function
+-- I means Integral, it means the function yeilds an Integral
+-- maybe I'll make variants with F for floating some time
+waveI :: (RealFloat a, Integral b, Integral c, Integral d)
+     => (a -> a) -- a trig function (or any function that will map Z to [-1,1]
+                 --                  over a period of length 2pi
+     -> b        -- amplitude
+     -> b        -- wavelength
      -> c        -- curent position in cycle (the 'x' value)
      -> d        -- current position on band (the 'y' value)
-wave f bandwidth cyclelength =
-  let toRadians  = (((2 * pi) / (fromIntegral cyclelength)) *)
+waveI f amplitude wavelength =
+  let toRadians  = (((2 * pi) / (fromIntegral wavelength)) *)
       recenter   = (/ 2) . (1 +)
-      factorBand = ((fromIntegral bandwidth) *)
-   in floor . factorBand . recenter . f . toRadians . fromIntegral
+      factorBand = ((fromIntegral amplitude) *)
+   in round . factorBand . recenter . f . toRadians . fromIntegral
 
-sinwave :: (Integral a, Integral b, Integral c) => a -> a -> b -> c
-sinwave = wave sin
+sinwaveI :: (Integral a, Integral b, Integral c) => a -> a -> b -> c
+sinwaveI = waveI sin
 
-coswave :: (Integral a, Integral b, Integral c) => a -> a -> b -> c
-coswave = wave cos
+coswaveI :: (Integral a, Integral b, Integral c) => a -> a -> b -> c
+coswaveI = waveI cos
 
-ellipsewave :: (Integral a, Integral b)
+ellipsewaveV2 :: (Integral a, Integral b)
        => (V2 a) -- width/height to stay within
        -> a      -- length of cycle (larger for slower movement)
        -> b      -- current position in cycle
        -> (V2 a) -- current position in ellipse
-ellipsewave box cyclelength i =
-  let w = (\(V2 x _) -> coswave x cyclelength i) box
-      h = (\(V2 _ y) -> sinwave y cyclelength i) box
+ellipsewaveV2 box wavelength i =
+  let w = (\(V2 x _) -> coswaveI x wavelength i) box
+      h = (\(V2 _ y) -> sinwaveI y wavelength i) box
    in (V2 w h)
 
-rectwave :: (Integral a, Integral b)
+rectwaveV2 :: (Integral a, Integral b)
        => (V2 a) -- width/height to stay within
        -> a      -- length of cycle (larger for slower movement)
        -> b      -- current position in cycle
-       -> (V2 a) -- current position in box type thing
-rectwave box cyclelength i =
-  let ctrapwave = wave (sin . (* pi) . (/ 2) . cos)
-      strapwave = wave (sin . (* pi) . (/ 2) . sin)
-      w = (\(V2 x _) -> ctrapwave x cyclelength i) box
-      h = (\(V2 _ y) -> strapwave y cyclelength i) box
+       -> (V2 a) -- current position in rectangle type thing
+rectwaveV2 box wavelength i =
+  let squarish_coswave = waveI (sin . (* pi) . (/ 2) . cos)
+      squarish_sinwave = waveI (sin . (* pi) . (/ 2) . sin)
+      w = (\(V2 x _) -> squarish_coswave x wavelength i) box
+      h = (\(V2 _ y) -> squarish_sinwave y wavelength i) box
    in (V2 w h)
 

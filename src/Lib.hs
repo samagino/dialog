@@ -10,8 +10,8 @@ import SDL
 import SDL.Font      qualified as F
 import SDL.Primitive qualified as P
 
-import Selection (Selection, Selection(..), toggle)
-import Waves (sinwave, coswave, ellipsewave, rectwave)
+import Selection (Selection(..), toggle)
+import Waves (sinwaveI, coswaveI, ellipsewaveV2, rectwaveV2)
 
 width, height :: CInt
 (width, height) = (640, 400)
@@ -50,7 +50,7 @@ renderPrompt renderer font prompt i =
      dims  <- mapM surfaceDimensions surfs
 
      let bounds = map (\d -> (V2 (width - 9) (height `div` 3)) - d) dims
-         points = map (\(b, j) -> (V2 0 (height `div` 6)) + (ellipsewave b 500 (i + 250 + (j * 6)))) 
+         points = map (\(b, j) -> (V2 0 (height `div` 6)) + (ellipsewaveV2 b 500 (i + 250 + (j * 6)))) 
                       (zip bounds [0..])
          boxes = map (\(p, d) -> (Rectangle (P p) d))
                      (zip points dims)
@@ -74,7 +74,7 @@ renderY :: (Integral a)
         -> a
         -> IO Dim
 renderY renderer font sel i =
-  do surf <- F.blended font (V4 0 255 127 (1 + (sinwave 255 200 i))) "y"
+  do surf <- F.blended font (V4 0 255 127 (1 + (sinwaveI 255 200 i))) "y"
                                         -- ^-- 0 alpha means opaque, so add 1
      dim  <- surfaceDimensions surf
 
@@ -98,7 +98,7 @@ renderN :: (Integral a)
         -> a
         -> IO Dim
 renderN renderer font sel i =
-  do surf <- F.blended font (V4 255 0 127 (1 + (sinwave 255 200 (i + 100)))) "n"
+  do surf <- F.blended font (V4 255 0 127 (1 + (sinwaveI 255 200 (i + 100)))) "n"
                                         -- ^-- 0 alpha means opaque, so add 1
      dim  <- surfaceDimensions surf
 
@@ -123,30 +123,21 @@ renderSelection :: (Integral a)
                 -> a
                 -> IO ()
 renderSelection renderer sel yDim nDim i =
-  do let margin = 5 :: CInt
+  do let margins = (pure 5) :: Dim
+         padding = (V2 5 0) :: Dim
      case sel of
-       Y -> let circleBounds = yDim + V2 (margin * 2) (margin * 2)
-                pos = V2 (width   `div` 4) 
+       Y -> let pos = V2 (width   `div` 4)
                          ((height `div` 4) * 3)
-                posInBox1 = rectwave circleBounds 100 i
-                posInBox2 = rectwave circleBounds 100 (i + 5)
-                posInBox3 = rectwave circleBounds 100 (i + 50)
-                posInBox4 = rectwave circleBounds 100 (i + 55)
-            in do P.fillCircle renderer (pos + posInBox1 - (V2 margin margin)) 3 (V4 0 0 255 255)
-                  P.fillCircle renderer (pos + posInBox2 - (V2 margin margin)) 3 (V4 0 0 255 255)
-                  P.fillCircle renderer (pos + posInBox3 - (V2 margin margin)) 3 (V4 0 255 127 255)
-                  P.fillCircle renderer (pos + posInBox4 - (V2 margin margin)) 3 (V4 0 255 127 255)
-       N -> let circleBounds = nDim + V2 (margin * 2) (margin * 2)
-                pos = V2 ((width  `div` 4) * 3)
+                box1Cycle = rectwaveV2 margins 50 i
+                box2Cycle = rectwaveV2 margins 50 (i + 25)
+             in do P.rectangle renderer (pos + box1Cycle - padding - margins) (pos + box1Cycle + yDim + padding) (V4 0 0 255 255)
+                   P.rectangle renderer (pos + box2Cycle - padding - margins) (pos + box2Cycle + yDim + padding) (V4 0 255 127 255)
+       N -> let pos = V2 ((width  `div` 4) * 3)
                          ((height `div` 4) * 3)
-                posInBox1 = rectwave circleBounds 100 i
-                posInBox2 = rectwave circleBounds 100 (i + 5)
-                posInBox3 = rectwave circleBounds 100 (i + 50)
-                posInBox4 = rectwave circleBounds 100 (i + 55)
-            in do P.fillCircle renderer (pos + posInBox1 - (V2 margin margin)) 3 (V4 0 0 255 255)
-                  P.fillCircle renderer (pos + posInBox2 - (V2 margin margin)) 3 (V4 0 0 255 255)
-                  P.fillCircle renderer (pos + posInBox3 - (V2 margin margin)) 3 (V4 255 0 127 255)
-                  P.fillCircle renderer (pos + posInBox4 - (V2 margin margin)) 3 (V4 255 0 127 255)
+                box1Cycle = rectwaveV2 margins 50 i
+                box2Cycle = rectwaveV2 margins 50 (i + 25)
+             in do P.rectangle renderer (pos + box1Cycle - margins - padding) (pos + box1Cycle + nDim + padding) (V4 0 0 255 255)
+                   P.rectangle renderer (pos + box2Cycle - margins - padding) (pos + box2Cycle + nDim + padding) (V4 255 0 127 255)
 
 
 promptLoop :: Renderer  -- renderer to display things onto
@@ -163,7 +154,6 @@ promptLoop renderer font prompt sel i = do
   yDim <- renderY renderer font sel i
   nDim <- renderN renderer font sel i
   renderSelection renderer sel yDim nDim i
-
 
   present renderer
 
