@@ -2,7 +2,7 @@
 
 module Main (main) where
 
-import Lib
+import PromptWindow
 import System.Exit        (exitFailure, exitSuccess)
 import System.Environment (getArgs, getProgName)
 import System.Process     qualified as Proc
@@ -12,7 +12,7 @@ main = do
   args <- getArgs
   case args of 
     [prog, prompt] -> do
-      r <- windowPrompt prompt 
+      r <- promptWindow prompt 
       case r of
         True  -> (Proc.createProcess (Proc.shell prog)) >>= \_ -> exitSuccess
         False -> exitSuccess
