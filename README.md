@@ -37,7 +37,7 @@ system and all that jazz.
  
 ## font
 
-a path to a font is hardcoded in `src/Lib.hs` so you will prolly have
+a path to a font is hardcoded in `src/PromptWindow.hs` so you will prolly have
 to change this path to point to a font that is on your system to get
 things to work. the relevant line of code looks like:
 

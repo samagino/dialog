@@ -1,8 +1,8 @@
 # STUFF THAT SHOULD PROLLY BE DONE
 
-## refractor code
+## refactor code
 
-+ move more stuff into files besides `src/Lib.hs`
++ move more stuff into files besides `src/PromptWindow.hs`
 
 ## handle state better
 
@@ -14,6 +14,6 @@ a better way?
 
 ## handle fonts better
 
-don't just hardlink one font, do some other way, like
+don't just hardcode one font, do some other way, like
 + find fonts on system and pick one
 + have user path to font if they want or something
