@@ -157,6 +157,8 @@ renderN renderer font i =
      pure dim
 
 -- TODO: make this not suck (i.e. make it not have 3 case expressions)
+-- TODO: do state better
+-- TODO: implement Colour to blend colors and stuff
 renderSelection :: (Integral a)
                 => Renderer
                 -> (Selection, a) -- state
@@ -174,14 +176,15 @@ renderSelection renderer (sel, p) yDim nDim t =
       magenta = (V4 255 0 127 255)
       box1RelPos = rectwaveV2 margins 40 t
       box2RelPos = rectwaveV2 margins 40 (t + 20)
+      blendFactor = (((\n -> if n > 1 then 1 else n) . (/ 5) . fromIntegral) (t - p))
       pos = case sel of
-        Y -> blend nPos yPos (((\n -> if n > 1 then 1 else n) . (/ 5) . fromIntegral) (t - p))
-        N -> blend yPos nPos (((\n -> if n > 1 then 1 else n) . (/ 5) . fromIntegral) (t - p))
+        Y -> blend nPos yPos blendFactor
+        N -> blend yPos nPos blendFactor
       dim = case sel of
-        Y -> blend nDim yDim (((\n -> if n > 1 then 1 else n) . (/ 5) . fromIntegral) (t - p))
-        N -> blend yDim nDim (((\n -> if n > 1 then 1 else n) . (/ 5) . fromIntegral) (t - p))
-      color = case sel of
-        Y -> cyan
-        N -> magenta
+        Y -> blend nDim yDim blendFactor
+        N -> blend yDim nDim blendFactor
+      color = case sel of -- I dunno if blending V4's really works to blend colors
+        Y -> blend magenta cyan blendFactor
+        N -> blend cyan magenta blendFactor
    in do P.rectangle renderer (pos + box1RelPos - padding - margins) (pos + box1RelPos + dim + padding) blue
          P.rectangle renderer (pos + box2RelPos - padding - margins) (pos + box2RelPos + dim + padding) color
