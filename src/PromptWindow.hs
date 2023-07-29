@@ -12,6 +12,7 @@ import SDL.Primitive qualified as P
 
 import Selection (Selection(..), toggle)
 import Waves (sinwaveI, coswaveI, ellipsewaveV2, rectwaveV2)
+import Blendable (blend)
 
 width, height :: CInt
 (width, height) = (640, 400)
@@ -31,7 +32,7 @@ promptWindow question =
      renderer <- createRenderer window (-1) defaultRenderer
      font <- F.load "/usr/share/fonts/TTF/Crimson-Roman.ttf" 42
 
-     response <- promptLoop renderer font question Y 0
+     response <- promptLoop renderer font question (Y, (-10)) 0
 
      destroyWindow window
      F.quit
@@ -67,6 +68,47 @@ renderPrompt renderer font prompt i =
 
      mapM_ freeSurface surfs
      mapM_ destroyTexture textures
+
+promptLoop :: Renderer  -- renderer to display things onto
+           -> F.Font    -- font to display with
+           -> String    -- the prompt to display
+           -> (Selection, Int) -- option (either y or n) currently selected
+           -> Int       -- iterator
+           -> IO Bool   -- true if y is selected, false if n is
+promptLoop renderer font prompt (sel, p) t =
+  do rendererDrawColor renderer $= V4 0 0 0 255
+     clear renderer
+
+     renderPrompt renderer font prompt t
+     yDim <- renderY renderer font t
+     nDim <- renderN renderer font t
+     renderSelection renderer (sel, p) yDim nDim t
+
+     present renderer
+
+     delay 25
+
+     events <- pollEvents
+     let isKeyPress keycode event =
+           case eventPayload event of
+             KeyboardEvent kbe ->
+               keyboardEventKeyMotion kbe == Pressed &&
+               keysymKeycode (keyboardEventKeysym kbe) == keycode
+             _ -> False
+         yPressed     = any (isKeyPress KeycodeY) events
+         nPressed     = any (isKeyPress KeycodeN) events
+         tabPressed   = any (isKeyPress KeycodeTab) events
+         enterPressed = any (isKeyPress KeycodeReturn) events
+
+     -- TODO: add mouse support (click y/n to do what y/n does)
+     --       also change selection on hover (i.e. if mouse hovers 
+     --       over y, move selection to y)
+     -- y means do the command given as argument
+     -- n means don't do that command
+     if yPressed || enterPressed && sel == Y then pure True
+       else if nPressed || enterPressed && sel == N then pure False
+       else if tabPressed then (promptLoop renderer font prompt ((toggle sel), t) (t + 1))
+       else (promptLoop renderer font prompt (sel, p) (t + 1))
 
 renderY :: (Integral a)
         => Renderer
@@ -114,67 +156,32 @@ renderN renderer font i =
 
      pure dim
 
+-- TODO: make this not suck (i.e. make it not have 3 case expressions)
 renderSelection :: (Integral a)
                 => Renderer
-                -> Selection
+                -> (Selection, a) -- state
                 -> Dim
                 -> Dim
                 -> a
                 -> IO ()
-renderSelection renderer sel yDim nDim i =
-  let margins = (pure 5) :: Dim
-      padding = (V2 5 0) :: Dim
-   in case sel of
-        Y -> let pos = V2 (width   `div` 4)
-                         ((height `div` 4) * 3)
-                 box1Cycle = rectwaveV2 margins 40 i
-                 box2Cycle = rectwaveV2 margins 40 (i + 20)
-              in do P.rectangle renderer (pos + box1Cycle - padding - margins) (pos + box1Cycle + yDim + padding) (V4 0 0 255 255)
-                    P.rectangle renderer (pos + box2Cycle - padding - margins) (pos + box2Cycle + yDim + padding) (V4 0 255 127 255)
-        N -> let pos = V2 ((width  `div` 4) * 3)
-                          ((height `div` 4) * 3)
-                 box1Cycle = rectwaveV2 margins 40 i
-                 box2Cycle = rectwaveV2 margins 40 (i + 20)
-              in do P.rectangle renderer (pos + box1Cycle - margins - padding) (pos + box1Cycle + nDim + padding) (V4 0 0 255 255)
-                    P.rectangle renderer (pos + box2Cycle - margins - padding) (pos + box2Cycle + nDim + padding) (V4 255 0 127 255)
-
-promptLoop :: Renderer  -- renderer to display things onto
-           -> F.Font    -- font to display with
-           -> String    -- the prompt to display
-           -> Selection -- option (either y or n) currently selected
-           -> Int       -- iterator
-           -> IO Bool   -- true if y is selected, false if n is
-promptLoop renderer font prompt sel i =
-  do rendererDrawColor renderer $= V4 0 0 0 255
-     clear renderer
-
-     renderPrompt renderer font prompt i
-     yDim <- renderY renderer font i
-     nDim <- renderN renderer font i
-     renderSelection renderer sel yDim nDim i
-
-     present renderer
-
-     delay 25
-
-     events <- pollEvents
-     let isKeyPress keycode event =
-           case eventPayload event of
-             KeyboardEvent kbe ->
-               keyboardEventKeyMotion kbe == Pressed &&
-               keysymKeycode (keyboardEventKeysym kbe) == keycode
-             _ -> False
-         yPressed     = any (isKeyPress KeycodeY) events
-         nPressed     = any (isKeyPress KeycodeN) events
-         tabPressed   = any (isKeyPress KeycodeTab) events
-         enterPressed = any (isKeyPress KeycodeReturn) events
-
-     -- TODO: add mouse support (click y/n to do what y/n does)
-     --       also change selection on hover (i.e. if mouse hovers 
-     --       over y, move selection to y)
-     -- y means do the command given as argument
-     -- n means don't do that command
-     if yPressed || enterPressed && sel == Y then pure True
-       else if nPressed || enterPressed && sel == N then pure False
-       else if tabPressed then (promptLoop renderer font prompt (toggle sel) (i + 1))
-       else (promptLoop renderer font prompt sel (i + 1))
+renderSelection renderer (sel, p) yDim nDim t =
+  let margins = pure 5 :: Dim
+      padding = V2 5 0 :: Dim
+      yPos = V2 (width `div` 4) ((height `div` 4) * 3) :: Pos
+      nPos = V2 ((width `div` 4) * 3) ((height `div` 4) * 3) :: Pos
+      blue = (V4 0 0 255 255)
+      cyan = (V4 0 255 127 255)
+      magenta = (V4 255 0 127 255)
+      box1RelPos = rectwaveV2 margins 40 t
+      box2RelPos = rectwaveV2 margins 40 (t + 20)
+      pos = case sel of
+        Y -> blend nPos yPos (((\n -> if n > 1 then 1 else n) . (/ 5) . fromIntegral) (t - p))
+        N -> blend yPos nPos (((\n -> if n > 1 then 1 else n) . (/ 5) . fromIntegral) (t - p))
+      dim = case sel of
+        Y -> blend nDim yDim (((\n -> if n > 1 then 1 else n) . (/ 5) . fromIntegral) (t - p))
+        N -> blend yDim nDim (((\n -> if n > 1 then 1 else n) . (/ 5) . fromIntegral) (t - p))
+      color = case sel of
+        Y -> cyan
+        N -> magenta
+   in do P.rectangle renderer (pos + box1RelPos - padding - margins) (pos + box1RelPos + dim + padding) blue
+         P.rectangle renderer (pos + box2RelPos - padding - margins) (pos + box2RelPos + dim + padding) color
