@@ -1,5 +1,6 @@
 module Blendable (Blendable, blend) where
 
+import Prelude hiding (truncate)
 import Foreign.C.Types (CInt)
 import Data.Word (Word8)
 import SDL.Vect (V2(..), V4(..))
@@ -7,13 +8,20 @@ import SDL.Vect (V2(..), V4(..))
 class Blendable a where
   blend :: (RealFrac b) => a -> a -> b -> a
 
+truncate :: RealFrac a => a -> a
+truncate r | r < 0 = 0
+           | r > 1 = 1
+           | True  = r
+           
 instance Blendable CInt where
-  blend a b r = let r' = 1 - r
-                   in round $ r' * (fromIntegral a) + r * (fromIntegral b)
+  blend a b r = let r_ = truncate r
+                    r' = 1 - r_
+                in round $ r' * (fromIntegral a) + r_ * (fromIntegral b)
 
 instance Blendable Word8 where
-  blend a b r = let r' = 1 - r
-                   in round $ r' * (fromIntegral a) + r * (fromIntegral b)
+  blend a b r = let r_ = truncate r
+                    r' = 1 - r_
+                in round $ r' * (fromIntegral a) + r_ * (fromIntegral b)
 
 instance (Blendable a) => Blendable (V2 a) where
   blend (V2 a_x a_y) (V2 b_x b_y) r = V2 (blend a_x b_x r) (blend a_y b_y r)

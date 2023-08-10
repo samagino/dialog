@@ -32,14 +32,13 @@ promptWindow question =
      renderer <- createRenderer window (-1) defaultRenderer
      font <- F.load "/usr/share/fonts/TTF/Crimson-Roman.ttf" 42
 
-     response <- promptLoop renderer font question (Y, (-10)) 0
+     response <- promptLoop renderer font question (Y, 1, 0) 0
 
      destroyWindow window
      F.quit
      quit
 
      pure response
-
 
 renderPrompt :: (Integral a) 
              => Renderer 
@@ -72,21 +71,22 @@ renderPrompt renderer font prompt i =
 promptLoop :: Renderer  -- renderer to display things onto
            -> F.Font    -- font to display with
            -> String    -- the prompt to display
-           -> (Selection, Int) -- option (either y or n) currently selected
+           -> (Selection, Float, Float) -- state (besides iterator)
            -> Int       -- iterator
            -> IO Bool   -- true if y is selected, false if n is
-promptLoop renderer font prompt (sel, p) t =
+promptLoop renderer font prompt (sel, r, v) t =
   do rendererDrawColor renderer $= V4 0 0 0 255
      clear renderer
 
      renderPrompt renderer font prompt t
      yDim <- renderY renderer font t
      nDim <- renderN renderer font t
-     renderSelection renderer (sel, p) yDim nDim t
+     (r', v') <- renderSelection renderer (sel, r, v) yDim nDim t
 
      present renderer
 
-     delay 25
+     -- ~60 frames per second
+     delay 16
 
      events <- pollEvents
      let isKeyPress keycode event =
@@ -107,8 +107,8 @@ promptLoop renderer font prompt (sel, p) t =
      -- n means don't do that command
      if yPressed || enterPressed && sel == Y then pure True
        else if nPressed || enterPressed && sel == N then pure False
-       else if tabPressed then (promptLoop renderer font prompt ((toggle sel), t) (t + 1))
-       else (promptLoop renderer font prompt (sel, p) (t + 1))
+       else if tabPressed then (promptLoop renderer font prompt ((toggle sel), (1 - r'), (-v')) (t + 1))
+       else (promptLoop renderer font prompt (sel, r', v') (t + 1))
 
 renderY :: (Integral a)
         => Renderer
@@ -156,17 +156,20 @@ renderN renderer font i =
 
      pure dim
 
--- TODO: make this not suck (i.e. make it not have 3 case expressions)
+-- jesus christ this shit sucks
 -- TODO: do state better
+--       - make this function not have 3 case expressions
+--       - fix box jumping when selection switches in middle of transition
+--         - maybe track blendFactor rather than/in addition to t of last selection
 -- TODO: implement Colour to blend colors and stuff
-renderSelection :: (Integral a)
+renderSelection :: (Integral a, RealFrac b, Show b)
                 => Renderer
-                -> (Selection, a) -- state
+                -> (Selection, b, b) -- state
                 -> Dim
                 -> Dim
                 -> a
-                -> IO ()
-renderSelection renderer (sel, p) yDim nDim t =
+                -> IO (b, b)
+renderSelection renderer (sel, r, v) yDim nDim t =
   let margins = pure 5 :: Dim
       padding = V2 5 0 :: Dim
       yPos = V2 (width `div` 4) ((height `div` 4) * 3) :: Pos
@@ -174,17 +177,24 @@ renderSelection renderer (sel, p) yDim nDim t =
       blue = (V4 0 0 255 255)
       cyan = (V4 0 255 127 255)
       magenta = (V4 255 0 127 255)
-      box1RelPos = rectwaveV2 margins 40 t
-      box2RelPos = rectwaveV2 margins 40 (t + 20)
-      blendFactor = (((\n -> if n > 1 then 1 else n) . (/ 5) . fromIntegral) (t - p))
+      box1RelPos = rectwaveV2 margins 60 t
+      box2RelPos = rectwaveV2 margins 60 (t + 30)
+
+      trunc r | r < 0.0 = 0.0 | r > 1.0 = 1.0 | True = r
+
+      acceleration = 0.001
+      v' = if r >= 1.0 then 0.0 else if r <= 0.0 then 0.0001 else v + acceleration
+      r' = trunc (r + v')
+
       pos = case sel of
-        Y -> blend nPos yPos blendFactor
-        N -> blend yPos nPos blendFactor
+        Y -> blend nPos yPos r
+        N -> blend yPos nPos r
       dim = case sel of
-        Y -> blend nDim yDim blendFactor
-        N -> blend yDim nDim blendFactor
+        Y -> blend nDim yDim r
+        N -> blend yDim nDim r
       color = case sel of -- I dunno if blending V4's really works to blend colors
-        Y -> blend magenta cyan blendFactor
-        N -> blend cyan magenta blendFactor
+        Y -> blend magenta cyan r
+        N -> blend cyan magenta r
    in do P.rectangle renderer (pos + box1RelPos - padding - margins) (pos + box1RelPos + dim + padding) blue
          P.rectangle renderer (pos + box2RelPos - padding - margins) (pos + box2RelPos + dim + padding) color
+         pure (r', v')
