@@ -21,6 +21,7 @@ library
   exposed-modules:
       Blendable
       Position
+      PromptState
       PromptWindow
       Selection
       Waves

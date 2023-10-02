@@ -5,7 +5,7 @@ module Main (main) where
 import PromptWindow
 import System.Exit        (exitFailure, exitSuccess)
 import System.Environment (getArgs, getProgName)
-import System.Process     qualified as Proc
+import System.Process     (callCommand, shell)
 
 main :: IO ()
 main = do
@@ -14,9 +14,9 @@ main = do
     [prog, prompt] -> do
       r <- promptWindow prompt 
       case r of
-        True  -> (Proc.createProcess (Proc.shell prog)) >>= \_ -> exitSuccess
+        True  -> (callCommand prog) >>= \_ -> exitSuccess
         False -> exitSuccess
-    _                -> do
+    _ -> do
       name <- getProgName
       putStrLn ("usage: " ++ name ++ " command prompt")
       exitFailure
