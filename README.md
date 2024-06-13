@@ -1,1 +1,1 @@
-project moved to [here](codeberg.org/samagino/dialect)
+project moved to [here](https://codeberg.org/samagino/dialect)
