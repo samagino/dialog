@@ -183,5 +183,5 @@ renderSelection renderer (s, r, _) yDim nDim t =
       (pos, dim, color) = case s of
         Y -> (blend nPos yPos r, blend nDim yDim r, blend magenta cyan r)
         N -> (blend yPos nPos r, blend yDim nDim r, blend cyan magenta r)
-   in do P.rectangle renderer (pos + box1RelPos - padding - margins) (pos + box1RelPos + dim + padding) blue
-         P.rectangle renderer (pos + box2RelPos - padding - margins) (pos + box2RelPos + dim + padding) color
+  in do P.rectangle renderer (pos + box1RelPos - padding - margins) (pos + box1RelPos + dim + padding) blue
+        P.rectangle renderer (pos + box2RelPos - padding - margins) (pos + box2RelPos + dim + padding) color
